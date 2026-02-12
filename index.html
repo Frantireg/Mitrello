@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Franti Kanban</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="flex items-center justify-center h-screen">
+        <div class="bg-white p-8 rounded-xl shadow-2xl text-black w-96">
+            <h2 class="text-3xl font-bold mb-6 text-center text-slate-800">🔒 Acceso Privado</h2>
+            <input type="text" id="user-input" placeholder="Usuario" class="w-full border-2 border-slate-200 p-3 mb-3 rounded-lg focus:border-blue-500 outline-none">
+            <input type="password" id="pass-input" placeholder="Contraseña" class="w-full border-2 border-slate-200 p-3 mb-6 rounded-lg focus:border-blue-500 outline-none">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">ENTRAR</button>
+            <p id="login-error" class="text-red-500 mt-4 text-center hidden">Datos incorrectos</p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD (LISTA DE TABLEROS) -->
+    <div id="dashboard" class="hidden p-8">
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-4xl font-black text-blue-400">Mis Tableros</h1>
+            <button onclick="location.reload()" class="bg-slate-700 px-4 py-2 rounded text-sm">Cerrar Sesión</button>
+        </div>
+        
+        <div id="boards-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Tableros se cargan aquí -->
+        </div>
+
+        <button onclick="addBoard()" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl font-bold shadow-lg transition">
+            + Crear Nuevo Tablero
+        </button>
+    </div>
+
+    <!-- BOARD VIEW (EL CLON DE TRELLO) -->
+    <div id="board-view" class="hidden p-6">
+        <button onclick="showDashboard()" class="mb-6 text-blue-400 hover:text-blue-300 flex items-center">
+            ← Volver a tableros
+        </button>
+        <h2 id="board-title" class="text-3xl font-bold mb-8"></h2>
+
+        <div class="flex gap-6 overflow-x-auto items-start pb-10">
+            <!-- COLUMNAS -->
+            <div class="bg-slate-800 p-4 rounded-xl w-80 flex-shrink-0">
+                <h3 class="font-bold mb-4 uppercase text-slate-400 text-sm tracking-widest">Pendiente</h3>
+                <div id="col-pendiente" class="kanban-column min-h-[200px]"></div>
+                <button onclick="addCard('pendiente')" class="mt-4 w-full text-left text-slate-400 hover:text-white">+ Añadir tarjeta</button>
+            </div>
+
+            <div class="bg-slate-800 p-4 rounded-xl w-80 flex-shrink-0">
+                <h3 class="font-bold mb-4 uppercase text-slate-400 text-sm tracking-widest">En Proceso</h3>
+                <div id="col-proceso" class="kanban-column min-h-[200px]"></div>
+                <button onclick="addCard('proceso')" class="mt-4 w-full text-left text-slate-400 hover:text-white">+ Añadir tarjeta</button>
+            </div>
+
+            <div class="bg-slate-800 p-4 rounded-xl w-80 flex-shrink-0">
+                <h3 class="font-bold mb-4 uppercase text-slate-400 text-sm tracking-widest">Completado</h3>
+                <div id="col-completado" class="kanban-column min-h-[200px]"></div>
+                <button onclick="addCard('completado')" class="mt-4 w-full text-left text-slate-400 hover:text-white">+ Añadir tarjeta</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- CONFIGURACIÓN DE FIREBASE (PEGA TUS CLAVES AQUÍ) ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_DOMINIO",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_BUCKET",
+            messagingSenderId: "TU_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- VARIABLES DE ESTADO ---
+        let currentBoardId = null;
+
+        // --- LOGIN ---
+        window.handleLogin = () => {
+            const u = document.getElementById('user-input').value;
+            const p = document.getElementById('pass-input').value;
+            if(u === "Franti" && p === "Enero.20262026*") {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                loadBoards();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        // --- GESTIÓN DE TABLEROS ---
+        async function loadBoards() {
+            const q = query(collection(db, "boards"));
+            onSnapshot(q, (snapshot) => {
+                const grid = document.getElementById('boards-grid');
+                grid.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const board = doc.data();
+                    grid.innerHTML += `
+                        <div onclick="openBoard('${doc.id}', '${board.name}')" class="bg-slate-800 p-6 rounded-xl cursor-pointer hover:bg-slate-700 border border-slate-700 transition">
+                            <h3 class="text-xl font-bold">${board.name}</h3>
+                            <p class="text-slate-400 text-sm mt-2">Haz clic para abrir</p>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        window.addBoard = async () => {
+            const name = prompt("Nombre del nuevo tablero:");
+            if(name) {
+                await addDoc(collection(db, "boards"), { name: name });
+            }
+        }
+
+        window.showDashboard = () => {
+            document.getElementById('board-view').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+        }
+
+        // --- GESTIÓN DE TARJETAS (TRELLO) ---
+        window.openBoard = (id, name) => {
+            currentBoardId = id;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('board-view').classList.remove('hidden');
+            document.getElementById('board-title').innerText = name;
+            loadCards(id);
+        }
+
+        function loadCards(boardId) {
+            const q = query(collection(db, "cards"), where("boardId", "==", boardId));
+            onSnapshot(q, (snapshot) => {
+                // Limpiar columnas
+                document.getElementById('col-pendiente').innerHTML = "";
+                document.getElementById('col-proceso').innerHTML = "";
+                document.getElementById('col-completado').innerHTML = "";
+
+                snapshot.forEach(d => {
+                    const card = d.data();
+                    const cardHtml = `
+                        <div id="${d.id}" class="bg-white text-black p-4 rounded-lg mb-3 shadow-md border-t-4" style="border-color: ${card.color || '#ccc'}">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold">${card.title}</h4>
+                                <button onclick="deleteCard('${d.id}')" class="text-gray-400 hover:text-red-500 text-xs text-right">✕</button>
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-2 uppercase font-bold italic">${card.date || ''}</p>
+                        </div>
+                    `;
+                    document.getElementById(`col-${card.status}`).innerHTML += cardHtml;
+                });
+                initSortable();
+            });
+        }
+
+        window.addCard = async (status) => {
+            const title = prompt("Título de la tarea:");
+            const date = prompt("Fecha (ej: 20 Feb):");
+            const color = prompt("Color (red, blue, green, orange, purple):", "blue");
+            if(title) {
+                await addDoc(collection(db, "cards"), {
+                    boardId: currentBoardId,
+                    title: title,
+                    date: date,
+                    color: color,
+                    status: status
+                });
+            }
+        }
+
+        window.deleteCard = async (id) => {
+            if(confirm("¿Borrar esta tarjeta?")) {
+                await deleteDoc(doc(db, "cards", id));
+            }
+        }
+
+        // --- ARRASTRAR Y SOLTAR ---
+        function initSortable() {
+            const columns = ['pendiente', 'proceso', 'completado'];
+            columns.forEach(colId => {
+                const el = document.getElementById(`col-${colId}`);
+                new Sortable(el, {
+                    group: 'shared',
+                    animation: 150,
+                    onEnd: async (evt) => {
+                        const cardId = evt.item.id;
+                        const newStatus = evt.to.id.replace('col-', '');
+                        await updateDoc(doc(db, "cards", cardId), {
+                            status: newStatus
+                        });
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
