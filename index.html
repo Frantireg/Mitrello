@@ -3,88 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Franti Kanban</title>
+    <title>Franti Trello Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        .kanban-column { min-height: 150px; transition: background 0.2s; }
+        .sortable-ghost { opacity: 0.4; background: #cbd5e1; }
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow: hidden; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen">
+<body class="bg-slate-900 text-white min-h-screen font-sans">
 
-    <!-- LOGIN SCREEN -->
+    <!-- PANTALLA DE LOGIN -->
     <div id="login-screen" class="flex items-center justify-center h-screen">
-        <div class="bg-white p-8 rounded-xl shadow-2xl text-black w-96">
-            <h2 class="text-3xl font-bold mb-6 text-center text-slate-800">🔒 Acceso Privado</h2>
-            <input type="text" id="user-input" placeholder="Usuario" class="w-full border-2 border-slate-200 p-3 mb-3 rounded-lg focus:border-blue-500 outline-none">
-            <input type="password" id="pass-input" placeholder="Contraseña" class="w-full border-2 border-slate-200 p-3 mb-6 rounded-lg focus:border-blue-500 outline-none">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">ENTRAR</button>
-            <p id="login-error" class="text-red-500 mt-4 text-center hidden">Datos incorrectos</p>
+        <div class="bg-white p-8 rounded-2xl shadow-2xl text-black w-full max-w-sm mx-4">
+            <h2 class="text-3xl font-black mb-6 text-center text-slate-800">🔒 Acceso</h2>
+            <input type="text" id="user-input" placeholder="Usuario" class="w-full border-2 p-3 mb-3 rounded-xl focus:border-blue-500 outline-none">
+            <input type="password" id="pass-input" placeholder="Contraseña" class="w-full border-2 p-3 mb-6 rounded-xl focus:border-blue-500 outline-none">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition transform active:scale-95">ENTRAR</button>
+            <p id="login-error" class="text-red-500 mt-4 text-center hidden font-semibold">Credenciales incorrectas</p>
         </div>
     </div>
 
     <!-- DASHBOARD (LISTA DE TABLEROS) -->
-    <div id="dashboard" class="hidden p-8">
-        <div class="flex justify-between items-center mb-10">
-            <h1 class="text-4xl font-black text-blue-400">Mis Tableros</h1>
-            <button onclick="location.reload()" class="bg-slate-700 px-4 py-2 rounded text-sm">Cerrar Sesión</button>
+    <div id="dashboard" class="hidden p-4 md:p-10">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <h1 class="text-4xl font-black text-blue-400">Mis Proyectos</h1>
+            <button onclick="location.reload()" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-xs uppercase tracking-widest border border-slate-700">Cerrar Sesión</button>
         </div>
         
-        <div id="boards-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Tableros se cargan aquí -->
+        <div id="boards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            <!-- Los tableros se generan aquí -->
         </div>
 
-        <button onclick="addBoard()" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl font-bold shadow-lg transition">
-            + Crear Nuevo Tablero
+        <button onclick="addBoard()" class="bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-2xl font-black shadow-xl transition-all transform hover:-translate-y-1">
+            + NUEVO TABLERO
         </button>
     </div>
 
-    <!-- BOARD VIEW (EL CLON DE TRELLO) -->
-    <div id="board-view" class="hidden p-6">
-        <button onclick="showDashboard()" class="mb-6 text-blue-400 hover:text-blue-300 flex items-center">
-            ← Volver a tableros
+    <!-- VISTA DEL TABLERO SELECCIONADO -->
+    <div id="board-view" class="hidden p-4 md:p-8">
+        <button onclick="showDashboard()" class="mb-6 text-blue-400 hover:text-blue-300 font-bold flex items-center gap-2">
+            ← VOLVER AL PANEL
         </button>
-        <h2 id="board-title" class="text-3xl font-bold mb-8"></h2>
+        
+        <div class="flex items-center gap-4 mb-8">
+            <h2 id="board-title" class="text-3xl font-black"></h2>
+        </div>
 
-        <div class="flex gap-6 overflow-x-auto items-start pb-10">
-            <!-- COLUMNAS -->
-            <div class="bg-slate-800 p-4 rounded-xl w-80 flex-shrink-0">
-                <h3 class="font-bold mb-4 uppercase text-slate-400 text-sm tracking-widest">Pendiente</h3>
-                <div id="col-pendiente" class="kanban-column min-h-[200px]"></div>
-                <button onclick="addCard('pendiente')" class="mt-4 w-full text-left text-slate-400 hover:text-white">+ Añadir tarjeta</button>
+        <div class="flex gap-6 overflow-x-auto pb-10 items-start">
+            <!-- Columnas fijas -->
+            <template id="column-template">
+                <div class="bg-slate-800/50 backdrop-blur-sm p-4 rounded-2xl w-80 flex-shrink-0 border border-slate-700/50">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-black uppercase text-slate-400 text-xs tracking-widest col-name"></h3>
+                    </div>
+                    <div class="kanban-column" id=""></div>
+                    <button class="mt-4 w-full text-left text-slate-500 hover:text-blue-400 font-bold text-sm transition add-card-btn">+ Añadir tarjeta</button>
+                </div>
+            </template>
+
+            <div id="columns-wrapper" class="flex gap-6">
+                <!-- Aquí se inyectan las 3 columnas -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDICIÓN DE TARJETA -->
+    <div id="card-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="bg-white text-slate-900 w-full max-w-xl rounded-3xl p-8 relative shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div class="flex justify-between items-start mb-6">
+                <h3 class="text-2xl font-black">Editar Tarjeta</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 text-2xl">✕</button>
             </div>
 
-            <div class="bg-slate-800 p-4 rounded-xl w-80 flex-shrink-0">
-                <h3 class="font-bold mb-4 uppercase text-slate-400 text-sm tracking-widest">En Proceso</h3>
-                <div id="col-proceso" class="kanban-column min-h-[200px]"></div>
-                <button onclick="addCard('proceso')" class="mt-4 w-full text-left text-slate-400 hover:text-white">+ Añadir tarjeta</button>
-            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Título</label>
+                    <input type="text" id="modal-title" class="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-500 outline-none font-bold">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Fecha</label>
+                        <input type="text" id="modal-date" placeholder="Ej: 20 Feb" class="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Color Etiqueta</label>
+                        <select id="modal-color" class="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-500 outline-none">
+                            <option value="#3b82f6">Azul</option>
+                            <option value="#ef4444">Rojo</option>
+                            <option value="#22c55e">Verde</option>
+                            <option value="#f59e0b">Naranja</option>
+                            <option value="#a855f7">Morado</option>
+                            <option value="#64748b">Gris</option>
+                        </select>
+                    </div>
+                </div>
 
-            <div class="bg-slate-800 p-4 rounded-xl w-80 flex-shrink-0">
-                <h3 class="font-bold mb-4 uppercase text-slate-400 text-sm tracking-widest">Completado</h3>
-                <div id="col-completado" class="kanban-column min-h-[200px]"></div>
-                <button onclick="addCard('completado')" class="mt-4 w-full text-left text-slate-400 hover:text-white">+ Añadir tarjeta</button>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Descripción Larga</label>
+                    <textarea id="modal-desc" rows="4" class="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-500 outline-none" placeholder="Escribe detalles aquí..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Objetivo</label>
+                        <input type="text" id="modal-target" class="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-500 outline-none" placeholder="Ej: 1000€">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Dato Actual</label>
+                        <input type="text" id="modal-current" class="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-500 outline-none" placeholder="Ej: 450€">
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-6">
+                    <button onclick="saveCardChanges()" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-blue-700 transition">GUARDAR CAMBIOS</button>
+                    <button onclick="confirmDeleteCard()" class="bg-red-100 text-red-600 px-6 rounded-2xl font-bold hover:bg-red-200 transition">BORRAR</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script type="module">
-        // --- CONFIGURACIÓN DE FIREBASE (PEGA TUS CLAVES AQUÍ) ---
+        // --- CONFIGURACIÓN DE FIREBASE ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, where, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// !!! PEGA TUS CLAVES AQUÍ ABAJO !!!
         const firebaseConfig = {
-          apiKey: "AIzaSyDxnZhGyE3hTNg8mBO_srMYtMDeBvZCBNw",
-          authDomain: "mitrello-18bbf.firebaseapp.com",
-          projectId: "mitrello-18bbf",
-          storageBucket: "mitrello-18bbf.firebasestorage.app",
-          messagingSenderId: "546412561982",
-          appId: "1:546412561982:web:242b012d3168ec7f1c736f",
-          measurementId: "G-38N8ESQPSY"
+            apiKey: "AIzaSyDxnZhGyE3hTNg8mBO_srMYtMDeBvZCBNw",
+            authDomain: "mitrello-18bbf.firebaseapp.com",
+            projectId: "mitrello-18bbf",
+            storageBucket: "mitrello-18bbf.firebasestorage.app",
+            messagingSenderId: "546412561982",
+            appId: "1:546412561982:web:242b012d3168ec7f1c736f",
+            measurementId: "G-38N8ESQPSY"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- VARIABLES DE ESTADO ---
         let currentBoardId = null;
+        let currentEditingCardId = null;
 
         // --- LOGIN ---
         window.handleLogin = () => {
@@ -97,67 +160,98 @@
             } else {
                 document.getElementById('login-error').classList.remove('hidden');
             }
-        }
+        };
 
-        // --- GESTIÓN DE TABLEROS ---
+        // --- TABLEROS ---
         async function loadBoards() {
             const q = query(collection(db, "boards"));
             onSnapshot(q, (snapshot) => {
                 const grid = document.getElementById('boards-grid');
                 grid.innerHTML = "";
-                snapshot.forEach(doc => {
-                    const board = doc.data();
+                snapshot.forEach(d => {
+                    const board = d.data();
                     grid.innerHTML += `
-                        <div onclick="openBoard('${doc.id}', '${board.name}')" class="bg-slate-800 p-6 rounded-xl cursor-pointer hover:bg-slate-700 border border-slate-700 transition">
-                            <h3 class="text-xl font-bold">${board.name}</h3>
-                            <p class="text-slate-400 text-sm mt-2">Haz clic para abrir</p>
-                        </div>
-                    `;
+                        <div class="group relative bg-slate-800 p-8 rounded-3xl border border-slate-700 hover:border-blue-500 transition-all cursor-pointer shadow-lg">
+                            <div onclick="openBoard('${d.id}', '${board.name}')">
+                                <h3 class="text-2xl font-black text-white">${board.name}</h3>
+                                <p class="text-slate-500 text-sm mt-2 uppercase tracking-tighter font-bold">Click para gestionar</p>
+                            </div>
+                            <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="editBoardName('${d.id}', '${board.name}')" class="p-2 bg-slate-700 hover:bg-blue-600 rounded-lg text-xs">✏️</button>
+                                <button onclick="deleteBoard('${d.id}')" class="p-2 bg-slate-700 hover:bg-red-600 rounded-lg text-xs">🗑️</button>
+                            </div>
+                        </div>`;
                 });
             });
         }
 
         window.addBoard = async () => {
-            const name = prompt("Nombre del nuevo tablero:");
-            if(name) {
-                await addDoc(collection(db, "boards"), { name: name });
-            }
-        }
+            const name = prompt("Nombre del tablero:");
+            if(name) await addDoc(collection(db, "boards"), { name });
+        };
 
+        window.editBoardName = async (id, oldName) => {
+            const newName = prompt("Nuevo nombre del tablero:", oldName);
+            if(newName && newName !== oldName) await updateDoc(doc(db, "boards", id), { name: newName });
+        };
+
+        window.deleteBoard = async (id) => {
+            if(confirm("¿Seguro que quieres borrar este tablero y todo su contenido?")) {
+                await deleteDoc(doc(db, "boards", id));
+            }
+        };
+
+        // --- VISTA DE TABLERO Y COLUMNAS ---
         window.showDashboard = () => {
             document.getElementById('board-view').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
-        }
+        };
 
-        // --- GESTIÓN DE TARJETAS (TRELLO) ---
         window.openBoard = (id, name) => {
             currentBoardId = id;
             document.getElementById('dashboard').classList.add('hidden');
             document.getElementById('board-view').classList.remove('hidden');
             document.getElementById('board-title').innerText = name;
+            renderColumns();
             loadCards(id);
+        };
+
+        function renderColumns() {
+            const wrapper = document.getElementById('columns-wrapper');
+            wrapper.innerHTML = "";
+            const cols = [
+                { id: 'pendiente', name: 'Pendiente' },
+                { id: 'proceso', name: 'En Proceso' },
+                { id: 'completado', name: 'Completado' }
+            ];
+            
+            cols.forEach(c => {
+                const temp = document.getElementById('column-template').content.cloneNode(true);
+                temp.querySelector('.col-name').innerText = c.name;
+                const colDiv = temp.querySelector('.kanban-column');
+                colDiv.id = `col-${c.id}`;
+                temp.querySelector('.add-card-btn').onclick = () => addCard(c.id);
+                wrapper.appendChild(temp);
+            });
         }
 
+        // --- TARJETAS ---
         function loadCards(boardId) {
             const q = query(collection(db, "cards"), where("boardId", "==", boardId));
             onSnapshot(q, (snapshot) => {
-                // Limpiar columnas
-                document.getElementById('col-pendiente').innerHTML = "";
-                document.getElementById('col-proceso').innerHTML = "";
-                document.getElementById('col-completado').innerHTML = "";
-
+                document.querySelectorAll('.kanban-column').forEach(c => c.innerHTML = "");
                 snapshot.forEach(d => {
                     const card = d.data();
                     const cardHtml = `
-                        <div id="${d.id}" class="bg-white text-black p-4 rounded-lg mb-3 shadow-md border-t-4" style="border-color: ${card.color || '#ccc'}">
-                            <div class="flex justify-between items-start">
-                                <h4 class="font-bold">${card.title}</h4>
-                                <button onclick="deleteCard('${d.id}')" class="text-gray-400 hover:text-red-500 text-xs text-right">✕</button>
+                        <div id="${d.id}" onclick="openCardEditor('${d.id}')" class="bg-white p-4 rounded-xl mb-3 shadow-sm border-l-8 cursor-pointer hover:shadow-md transition active:scale-95" style="border-color: ${card.color || '#3b82f6'}">
+                            <h4 class="text-slate-900 font-black leading-tight mb-2">${card.title}</h4>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[10px] font-black bg-slate-100 px-2 py-1 rounded text-slate-500 uppercase">${card.date || 'S/F'}</span>
+                                ${card.target ? `<span class="text-[10px] font-bold text-blue-600">${card.current || 0}/${card.target}</span>` : ''}
                             </div>
-                            <p class="text-[10px] text-gray-500 mt-2 uppercase font-bold italic">${card.date || ''}</p>
-                        </div>
-                    `;
-                    document.getElementById(`col-${card.status}`).innerHTML += cardHtml;
+                        </div>`;
+                    const targetCol = document.getElementById(`col-${card.status}`);
+                    if(targetCol) targetCol.innerHTML += cardHtml;
                 });
                 initSortable();
             });
@@ -165,44 +259,77 @@
 
         window.addCard = async (status) => {
             const title = prompt("Título de la tarea:");
-            const date = prompt("Fecha (ej: 20 Feb):");
-            const color = prompt("Color (red, blue, green, orange, purple):", "blue");
-            if(title) {
-                await addDoc(collection(db, "cards"), {
-                    boardId: currentBoardId,
-                    title: title,
-                    date: date,
-                    color: color,
-                    status: status
-                });
-            }
-        }
+            if(!title) return;
+            await addDoc(collection(db, "cards"), {
+                boardId: currentBoardId,
+                title: title,
+                status: status,
+                description: "",
+                date: "",
+                color: "#3b82f6",
+                target: "",
+                current: ""
+            });
+        };
 
-        window.deleteCard = async (id) => {
-            if(confirm("¿Borrar esta tarjeta?")) {
-                await deleteDoc(doc(db, "cards", id));
+        // --- EDITOR MODAL ---
+        window.openCardEditor = async (cardId) => {
+            currentEditingCardId = cardId;
+            const docSnap = await getDoc(doc(db, "cards", cardId));
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('modal-title').value = data.title || "";
+                document.getElementById('modal-date').value = data.date || "";
+                document.getElementById('modal-color').value = data.color || "#3b82f6";
+                document.getElementById('modal-desc').value = data.description || "";
+                document.getElementById('modal-target').value = data.target || "";
+                document.getElementById('modal-current').value = data.current || "";
+                
+                document.getElementById('card-modal').classList.remove('hidden');
+                document.body.classList.add('modal-active');
             }
-        }
+        };
 
-        // --- ARRASTRAR Y SOLTAR ---
+        window.closeModal = () => {
+            document.getElementById('card-modal').classList.add('hidden');
+            document.body.classList.remove('modal-active');
+        };
+
+        window.saveCardChanges = async () => {
+            const upd = {
+                title: document.getElementById('modal-title').value,
+                date: document.getElementById('modal-date').value,
+                color: document.getElementById('modal-color').value,
+                description: document.getElementById('modal-desc').value,
+                target: document.getElementById('modal-target').value,
+                current: document.getElementById('modal-current').value,
+            };
+            await updateDoc(doc(db, "cards", currentEditingCardId), upd);
+            closeModal();
+        };
+
+        window.confirmDeleteCard = async () => {
+            if(confirm("¿Borrar definitivamente esta tarjeta?")) {
+                await deleteDoc(doc(db, "cards", currentEditingCardId));
+                closeModal();
+            }
+        };
+
+        // --- DRAG & DROP ---
         function initSortable() {
-            const columns = ['pendiente', 'proceso', 'completado'];
-            columns.forEach(colId => {
-                const el = document.getElementById(`col-${colId}`);
+            document.querySelectorAll('.kanban-column').forEach(el => {
                 new Sortable(el, {
                     group: 'shared',
                     animation: 150,
+                    ghostClass: 'sortable-ghost',
                     onEnd: async (evt) => {
                         const cardId = evt.item.id;
                         const newStatus = evt.to.id.replace('col-', '');
-                        await updateDoc(doc(db, "cards", cardId), {
-                            status: newStatus
-                        });
+                        await updateDoc(doc(db, "cards", cardId), { status: newStatus });
                     }
                 });
             });
         }
     </script>
 </body>
-
 </html>
