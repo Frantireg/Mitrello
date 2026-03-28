@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Franti Trello Master</title>
+    <title>Franti Trello Master - Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        .kanban-column { min-height: 200px; }
+        .kanban-column { min-height: 250px; }
         .sortable-ghost { opacity: 0.3; background: #94a3b8; border-radius: 12px; }
         .modal-bg { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(4px); }
         ::-webkit-scrollbar { height: 8px; width: 8px; }
@@ -21,11 +21,11 @@
         <div class="bg-white p-8 rounded-3xl shadow-2xl text-black w-full max-w-sm mx-4 text-center">
             <h2 class="text-3xl font-black mb-6 text-slate-800">🔒 Acceso Franti</h2>
             <div class="space-y-3">
-                <input type="text" id="user-input" placeholder="Usuario" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500">
-                <input type="password" id="pass-input" placeholder="Contraseña" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500">
+                <input type="text" id="user-input" placeholder="Usuario" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition">
+                <input type="password" id="pass-input" placeholder="Contraseña" class="w-full border-2 p-3 rounded-xl outline-none focus:border-blue-500 transition">
             </div>
             <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold mt-6 hover:bg-blue-700 transition shadow-lg">ENTRAR</button>
-            <p id="login-error" class="text-red-500 mt-4 hidden font-bold">Datos incorrectos</p>
+            <p id="login-error" class="text-red-500 mt-4 hidden font-bold italic">Datos incorrectos</p>
         </div>
     </div>
 
@@ -33,7 +33,7 @@
     <div id="dashboard" class="hidden p-6 md:p-12 max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-10">
             <h1 class="text-4xl font-black text-blue-400">Mis Proyectos</h1>
-            <button onclick="location.reload()" class="bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold border border-slate-700">SALIR</button>
+            <button onclick="location.reload()" class="bg-slate-800 px-4 py-2 rounded-lg text-xs font-bold border border-slate-700 hover:bg-slate-700 transition">SALIR</button>
         </div>
         <div id="boards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10"></div>
         <button onclick="addBoardWizard()" class="bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-2xl font-black shadow-xl transition-all">+ NUEVO TABLERO PERSONALIZADO</button>
@@ -41,7 +41,7 @@
 
     <!-- VISTA TABLERO -->
     <div id="board-view" class="hidden h-screen flex flex-col">
-        <div class="p-6 bg-slate-900/80 backdrop-blur border-b border-slate-800 flex justify-between items-center">
+        <div class="p-6 bg-slate-900/80 border-b border-slate-800 flex justify-between items-center">
             <div class="flex items-center gap-4">
                 <button onclick="showDashboard()" class="text-blue-400 font-bold">← VOLVER</button>
                 <h2 id="board-title" class="text-2xl font-black"></h2>
@@ -51,32 +51,32 @@
         <div id="columns-wrapper" class="flex gap-6 overflow-x-auto p-6 items-start flex-1"></div>
     </div>
 
-    <!-- MODAL CONFIGURACIÓN COLUMNAS -->
+    <!-- MODAL CONFIGURACIÓN TABLERO -->
     <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-        <div class="bg-white text-slate-900 w-full max-w-lg rounded-3xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
+        <div class="bg-white text-slate-900 w-full max-w-lg rounded-3xl p-8 shadow-2xl">
             <h3 class="text-2xl font-black mb-6 flex justify-between">Editar Tablero <button onclick="closeSettings()" class="text-slate-400">✕</button></h3>
-            <div class="mb-6">
+            <div class="mb-6 text-left">
                 <label class="text-[10px] font-bold text-slate-400 uppercase">Nombre del Tablero</label>
-                <input type="text" id="edit-board-name" class="w-full border-2 p-3 rounded-xl focus:border-blue-500 font-bold outline-none">
+                <input type="text" id="edit-board-name" class="w-full border-2 p-3 rounded-xl font-bold outline-none focus:border-blue-500">
             </div>
-            <div class="mb-6">
-                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Columnas del Tablero</label>
+            <div class="mb-6 text-left">
+                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-2">Columnas</label>
                 <div id="edit-columns-list" class="space-y-3"></div>
                 <button onclick="addColumnToEdit()" class="mt-4 text-blue-600 font-bold text-sm">+ Añadir nueva columna</button>
             </div>
-            <button onclick="saveBoardSettings()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">GUARDAR CAMBIOS</button>
+            <button onclick="saveBoardSettings()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700 transition">GUARDAR CAMBIOS</button>
         </div>
     </div>
 
     <!-- MODAL EDICIÓN TARJETA -->
     <div id="card-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg">
-        <div class="bg-white text-slate-900 w-full max-w-xl rounded-3xl p-8 relative shadow-2xl">
+        <div class="bg-white text-slate-900 w-full max-w-xl rounded-3xl p-8 relative shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-black">Editar Tarea</h3>
                 <button onclick="closeModal()" class="text-slate-400 text-2xl">✕</button>
             </div>
             <div class="space-y-4">
-                <input type="text" id="modal-title" placeholder="Título" class="w-full border-2 p-3 rounded-xl font-bold outline-none">
+                <input type="text" id="modal-title" placeholder="Título" class="w-full border-2 p-3 rounded-xl font-bold outline-none focus:border-blue-500">
                 <div class="grid grid-cols-2 gap-4">
                     <input type="text" id="modal-date" placeholder="Fecha" class="w-full border-2 p-3 rounded-xl outline-none text-sm">
                     <select id="modal-color" class="w-full border-2 p-3 rounded-xl outline-none">
@@ -121,6 +121,7 @@
         let currentEditingCardId = null;
         let tempCols = [];
 
+        // LOGIN
         window.handleLogin = () => {
             const u = document.getElementById('user-input').value;
             const p = document.getElementById('pass-input').value;
@@ -131,13 +132,28 @@
             } else { document.getElementById('login-error').classList.remove('hidden'); }
         };
 
-        // ASISTENTE DE CREACIÓN DE TABLERO
+        // DASHBOARD
+        async function loadBoards() {
+            onSnapshot(collection(db, "boards"), (snap) => {
+                const grid = document.getElementById('boards-grid');
+                grid.innerHTML = "";
+                snap.forEach(d => {
+                    const b = d.data();
+                    grid.innerHTML += `
+                        <div class="group relative bg-slate-800 p-8 rounded-3xl border border-slate-700 hover:border-blue-500 transition cursor-pointer shadow-lg" onclick="openBoard('${d.id}')">
+                            <h3 class="text-2xl font-black tracking-tighter">${b.name}</h3>
+                            <p class="text-slate-500 text-xs mt-2 uppercase font-bold tracking-widest">${b.columns ? b.columns.length : 0} Columnas</p>
+                            <button onclick="event.stopPropagation(); deleteBoard('${d.id}')" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition">🗑️</button>
+                        </div>`;
+                });
+            });
+        }
+
         window.addBoardWizard = async () => {
             const name = prompt("Nombre del Tablero:");
             if(!name) return;
             const num = parseInt(prompt("¿Cuántas columnas quieres?"));
             if(isNaN(num) || num < 1) return;
-            
             let cols = [];
             for(let i=0; i<num; i++) {
                 const cName = prompt(`Nombre de la columna ${i+1}:`);
@@ -146,25 +162,9 @@
             await addDoc(collection(db, "boards"), { name, columns: cols });
         };
 
-        async function loadBoards() {
-            onSnapshot(collection(db, "boards"), (snap) => {
-                const grid = document.getElementById('boards-grid');
-                grid.innerHTML = "";
-                snap.forEach(d => {
-                    const b = d.data();
-                    grid.innerHTML += `
-                        <div class="group relative bg-slate-800 p-8 rounded-3xl border border-slate-700 hover:border-blue-500 transition cursor-pointer" onclick="openBoard('${d.id}')">
-                            <h3 class="text-2xl font-black">${b.name}</h3>
-                            <p class="text-slate-500 text-xs mt-2 uppercase font-bold">${b.columns ? b.columns.length : 0} Columnas</p>
-                            <button onclick="event.stopPropagation(); deleteBoard('${d.id}')" class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-600 hover:text-white rounded-lg">🗑️</button>
-                        </div>`;
-                });
-            });
-        }
-
         window.deleteBoard = async (id) => { if(confirm("¿Borrar tablero?")) await deleteDoc(doc(db, "boards", id)); };
 
-        // ABRIR TABLERO
+        // TABLERO
         window.openBoard = async (id) => {
             currentBoardId = id;
             const snap = await getDoc(doc(db, "boards", id));
@@ -184,7 +184,7 @@
                     <div class="bg-slate-800/60 p-4 rounded-2xl w-80 flex-shrink-0 border border-slate-700 shadow-xl">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-black uppercase text-slate-400 text-[10px] tracking-widest truncate mr-2">${c.title}</h3>
-                            <button onclick="massMove('${c.id}', '${c.title}')" class="text-[9px] font-bold bg-slate-700 px-2 py-1 rounded">MOVER</button>
+                            <button onclick="massMove('${c.id}', '${c.title}')" class="text-[9px] font-black bg-slate-700 px-2 py-1 rounded">MOVER</button>
                         </div>
                         <div class="kanban-column" id="${c.id}"></div>
                         <button onclick="addCard('${c.id}')" class="mt-4 w-full text-left text-slate-500 hover:text-blue-400 font-bold text-xs uppercase">+ Añadir tarjeta</button>
@@ -192,12 +192,12 @@
             });
         }
 
-        // CONFIGURACIÓN DE COLUMNAS
+        // --- GESTIÓN DE COLUMNAS (CORREGIDO) ---
         window.openBoardSettings = async () => {
             const snap = await getDoc(doc(db, "boards", currentBoardId));
             const data = snap.data();
             document.getElementById('edit-board-name').value = data.name;
-            tempCols = [...(data.columns || [])];
+            tempCols = JSON.parse(JSON.stringify(data.columns || [])); // Copia profunda
             renderEditList();
             document.getElementById('settings-modal').classList.remove('hidden');
         };
@@ -206,23 +206,43 @@
             const list = document.getElementById('edit-columns-list');
             list.innerHTML = "";
             tempCols.forEach((c, i) => {
-                list.innerHTML += `
-                    <div class="flex gap-2">
-                        <input type="text" value="${c.title}" onchange="updateColName(${i}, this.value)" class="flex-1 border-2 p-2 rounded-xl text-sm font-bold">
-                        <button onclick="removeCol(${i})" class="text-red-500 px-2">✕</button>
-                    </div>`;
+                const div = document.createElement('div');
+                div.className = "flex gap-2";
+                div.innerHTML = `
+                    <input type="text" value="${c.title}" class="col-input flex-1 border-2 p-2 rounded-xl text-sm font-bold focus:border-blue-500 outline-none">
+                    <button class="text-red-500 px-2">✕</button>
+                `;
+                // Evento para actualizar el nombre
+                div.querySelector('input').addEventListener('input', (e) => {
+                    tempCols[i].title = e.target.value;
+                });
+                // Evento para borrar
+                div.querySelector('button').addEventListener('click', () => {
+                    tempCols.splice(i, 1);
+                    renderEditList();
+                });
+                list.appendChild(div);
             });
         }
 
-        window.updateColName = (i, val) => { tempCols[i].title = val; };
-        window.addColumnToEdit = () => { tempCols.push({ id: 'c_' + Date.now(), title: 'Nueva Columna' }); renderEditList(); };
-        window.removeCol = (i) => { tempCols.splice(i, 1); renderEditList(); };
+        window.addColumnToEdit = () => {
+            tempCols.push({ id: 'c_' + Date.now(), title: 'Nueva Columna' });
+            renderEditList();
+        };
 
         window.saveBoardSettings = async () => {
             const newName = document.getElementById('edit-board-name').value;
-            await updateDoc(doc(db, "boards", currentBoardId), { name: newName, columns: tempCols });
-            closeSettings();
-            openBoard(currentBoardId);
+            try {
+                await updateDoc(doc(db, "boards", currentBoardId), { 
+                    name: newName, 
+                    columns: tempCols 
+                });
+                window.closeSettings();
+                // Forzar refresco de la vista del tablero
+                window.openBoard(currentBoardId);
+            } catch (error) {
+                alert("Error al guardar: " + error.message);
+            }
         };
 
         window.closeSettings = () => document.getElementById('settings-modal').classList.add('hidden');
@@ -232,20 +252,16 @@
             const q = query(collection(db, "cards"), where("boardId", "==", boardId));
             onSnapshot(q, (snapshot) => {
                 document.querySelectorAll('.kanban-column').forEach(el => el.innerHTML = "");
-                const validIds = activeCols.map(c => c.id);
-                
                 snapshot.forEach(d => {
                     const c = d.data();
-                    // Si la columna ya no existe, NO hacemos update automático para evitar parpadeos.
-                    // Simplemente no la mostramos o la mostramos en la primera columna si quieres.
                     const container = document.getElementById(c.status);
                     if (container) {
                         container.innerHTML += `
                             <div id="${d.id}" onclick="openCardEditor('${d.id}')" class="bg-white p-4 rounded-xl mb-3 shadow border-l-8 cursor-pointer transform active:scale-95 transition" style="border-color: ${c.color}">
-                                <h4 class="text-slate-900 font-bold text-sm mb-2">${c.title}</h4>
+                                <h4 class="text-slate-900 font-bold text-sm mb-2 leading-tight">${c.title}</h4>
                                 <div class="flex justify-between text-[9px] font-black text-slate-400">
-                                    <span>${c.date || ''}</span>
-                                    ${c.target ? `<span class="text-blue-600">${c.current || 0}/${c.target}</span>` : ''}
+                                    <span>${c.date || 'S/F'}</span>
+                                    ${c.target ? `<span class="text-blue-600 font-bold">${c.current || 0}/${c.target}</span>` : ''}
                                 </div>
                             </div>`;
                     }
@@ -263,12 +279,12 @@
             currentEditingCardId = id;
             const d = await getDoc(doc(db, "cards", id));
             const c = d.data();
-            document.getElementById('modal-title').value = c.title;
-            document.getElementById('modal-date').value = c.date;
-            document.getElementById('modal-color').value = c.color;
-            document.getElementById('modal-desc').value = c.description;
-            document.getElementById('modal-target').value = c.target;
-            document.getElementById('modal-current').value = c.current;
+            document.getElementById('modal-title').value = c.title || "";
+            document.getElementById('modal-date').value = c.date || "";
+            document.getElementById('modal-color').value = c.color || "#3b82f6";
+            document.getElementById('modal-desc').value = c.description || "";
+            document.getElementById('modal-target').value = c.target || "";
+            document.getElementById('modal-current').value = c.current || "";
             document.getElementById('card-modal').classList.remove('hidden');
         };
 
@@ -281,16 +297,17 @@
                 target: document.getElementById('modal-target').value,
                 current: document.getElementById('modal-current').value
             });
-            closeModal();
+            window.closeModal();
         };
 
-        window.confirmDeleteCard = async () => { if(confirm("¿Borrar tarjeta?")) { await deleteDoc(doc(db, "cards", currentEditingCardId)); closeModal(); } };
+        window.confirmDeleteCard = async () => { if(confirm("¿Borrar tarjeta?")) { await deleteDoc(doc(db, "cards", currentEditingCardId)); window.closeModal(); } };
         window.closeModal = () => document.getElementById('card-modal').classList.add('hidden');
         window.showDashboard = () => { document.getElementById('board-view').classList.add('hidden'); document.getElementById('dashboard').classList.remove('hidden'); };
 
         window.massMove = async (fromId, fromName) => {
             const snap = await getDoc(doc(db, "boards", currentBoardId));
             const cols = snap.data().columns.filter(c => c.id !== fromId);
+            if(cols.length === 0) return alert("No hay otras columnas.");
             let msg = `Mover de "${fromName}" a:\n\n`;
             cols.forEach((t, i) => msg += `${i+1}. ${t.title}\n`);
             const choice = prompt(msg + "\nNúmero del destino:");
